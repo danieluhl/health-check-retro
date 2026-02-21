@@ -26,6 +26,7 @@
 		"vite-tsconfig-paths": "^5.1.4"
 	},
 	"devDependencies": {
+		"@tanstack/cli": "^0.59.8",
 		"@tanstack/devtools-vite": "^0.3.11",
 		"@testing-library/dom": "^10.4.0",
 		"@testing-library/react": "^16.2.0",
@@ -34,6 +35,7 @@
 		"@types/react-dom": "^19.2.0",
 		"@vitejs/plugin-react": "^5.0.4",
 		"jsdom": "^27.0.0",
+		"supabase": "^2.76.12",
 		"typescript": "^5.7.2",
 		"vite": "^7.1.7",
 		"vitest": "^3.0.5",
