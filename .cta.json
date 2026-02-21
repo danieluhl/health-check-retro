@@ -1,19 +1,14 @@
 {
-  "projectName": "health-check-retro",
-  "mode": "file-router",
-  "typescript": true,
-  "tailwind": true,
-  "packageManager": "pnpm",
-  "git": false,
-  "install": true,
-  "addOnOptions": {},
-  "version": 1,
-  "addOns": true,
-  "framework": "react-cra",
-  "chosenAddOns": [
-    "cloudflare",
-    "shadcn",
-    "t3env",
-    "tanstack-query"
-  ]
+	"projectName": "health-check-retro",
+	"mode": "file-router",
+	"typescript": true,
+	"tailwind": true,
+	"packageManager": "pnpm",
+	"git": false,
+	"install": true,
+	"addOnOptions": {},
+	"version": 1,
+	"addOns": true,
+	"framework": "react-cra",
+	"chosenAddOns": ["cloudflare", "shadcn", "t3env", "tanstack-query"]
 }
