@@ -8,8 +8,12 @@
   "install": true,
   "addOnOptions": {},
   "version": 1,
+  "addOns": true,
   "framework": "react-cra",
   "chosenAddOns": [
-    "cloudflare"
+    "cloudflare",
+    "shadcn",
+    "t3env",
+    "tanstack-query"
   ]
 }

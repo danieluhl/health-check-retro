@@ -39,6 +39,33 @@ If you prefer not to use Tailwind CSS:
 4. Uninstall the packages: `pnpm add @tailwindcss/vite tailwindcss --dev`
 
 
+## Shadcn
+
+Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
+
+```bash
+pnpm dlx shadcn@latest add button
+```
+
+
+## T3Env
+
+- You can use T3Env to add type safety to your environment variables.
+- Add Environment variables to the `src/env.mjs` file.
+- Use the environment variables in your code.
+
+### Usage
+
+```ts
+import { env } from "#/env";
+
+console.log(env.VITE_APP_TITLE);
+```
+
+
+
+
+
 
 ## Routing
 
