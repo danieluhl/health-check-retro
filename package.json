@@ -9,7 +9,8 @@
 		"preview": "vite preview",
 		"test": "vitest run",
 		"deploy": "pnpm run build && wrangler deploy",
-		"cf-typegen": "wrangler types"
+		"cf-typegen": "wrangler types",
+		"update-types": "npx supabase gen types --lang=typescript --project-id wgyjfrnqtxkqkframuba > src/types/supabase.gen.ts"
 	},
 	"dependencies": {
 		"@radix-ui/react-label": "^2.1.1",

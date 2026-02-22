@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RetroRetroIdRouteImport } from './routes/retro/$retroId'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 
 const LoginRoute = LoginRouteImport.update({
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RetroRetroIdRoute = RetroRetroIdRouteImport.update({
+  id: '/retro/$retroId',
+  path: '/retro/$retroId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
   path: '/demo/tanstack-query',
@@ -33,30 +39,34 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/retro/$retroId': typeof RetroRetroIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/retro/$retroId': typeof RetroRetroIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/retro/$retroId': typeof RetroRetroIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/demo/tanstack-query'
+  fullPaths: '/' | '/login' | '/demo/tanstack-query' | '/retro/$retroId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/demo/tanstack-query'
-  id: '__root__' | '/' | '/login' | '/demo/tanstack-query'
+  to: '/' | '/login' | '/demo/tanstack-query' | '/retro/$retroId'
+  id: '__root__' | '/' | '/login' | '/demo/tanstack-query' | '/retro/$retroId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  RetroRetroIdRoute: typeof RetroRetroIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/retro/$retroId': {
+      id: '/retro/$retroId'
+      path: '/retro/$retroId'
+      fullPath: '/retro/$retroId'
+      preLoaderRoute: typeof RetroRetroIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/tanstack-query': {
       id: '/demo/tanstack-query'
       path: '/demo/tanstack-query'
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  RetroRetroIdRoute: RetroRetroIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -10,6 +10,7 @@ This is a web application for conducting team retrospectives. It is built with t
 *   **Routing:** [TanStack Router](https://tanstack.com/router)
 *   **Bundler:** [Vite](https://vitejs.dev/)
 *   **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+*   **UI:** use shadcn components
 *   **Testing:** [Vitest](https://vitest.dev/)
 *   **Deployment:** [Cloudflare Workers](https://workers.cloudflare.com/)
 *   **Database:** [Supabase](https://supabase.com/)
