@@ -14,7 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      entry: {
+      entries: {
         Row: {
           answers: Json | null
           created_at: string
@@ -38,14 +38,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "entry_survey_id_fkey"
+            foreignKeyName: "entries_survey_id_fkey"
             columns: ["survey_id"]
             isOneToOne: false
-            referencedRelation: "survey"
+            referencedRelation: "surveys"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "entry_user_id_fkey"
+            foreignKeyName: "entries_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -53,22 +53,7 @@ export type Database = {
           },
         ]
       }
-      retro: {
-        Row: {
-          created_at: string
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-        }
-        Relationships: []
-      }
-      retro_user: {
+      retro_users: {
         Row: {
           id: string
           joined_at: string
@@ -92,7 +77,7 @@ export type Database = {
             foreignKeyName: "retro_user_retro_id_fkey"
             columns: ["retro_id"]
             isOneToOne: false
-            referencedRelation: "retro"
+            referencedRelation: "retros"
             referencedColumns: ["id"]
           },
           {
@@ -104,7 +89,33 @@ export type Database = {
           },
         ]
       }
-      survey: {
+      retros: {
+        Row: {
+          created_at: string
+          id: string
+          team_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          team_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retro_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surveys: {
         Row: {
           created_at: string
           id: string
@@ -125,12 +136,30 @@ export type Database = {
             foreignKeyName: "survey_retro_id_fkey"
             columns: ["retro_id"]
             isOneToOne: false
-            referencedRelation: "retro"
+            referencedRelation: "retros"
             referencedColumns: ["id"]
           },
         ]
       }
-      topic: {
+      teams: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      topics: {
         Row: {
           created_at: string
           id: string
@@ -160,7 +189,7 @@ export type Database = {
             foreignKeyName: "topic_retro_id_fkey"
             columns: ["retro_id"]
             isOneToOne: false
-            referencedRelation: "retro"
+            referencedRelation: "retros"
             referencedColumns: ["id"]
           },
           {
@@ -190,7 +219,7 @@ export type Database = {
         }
         Relationships: []
       }
-      vote: {
+      votes: {
         Row: {
           created_at: string
           id: string
@@ -211,14 +240,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "vote_topic_id_fkey"
+            foreignKeyName: "votes_topic_id_fkey"
             columns: ["topic_id"]
             isOneToOne: false
-            referencedRelation: "topic"
+            referencedRelation: "topics"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "vote_user_id_fkey"
+            foreignKeyName: "votes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"

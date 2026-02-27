@@ -9,11 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RetrosRouteImport } from './routes/retros'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RetroIndexRouteImport } from './routes/retro/index'
+import { Route as TeamTeamIdRouteImport } from './routes/team/$teamId'
 import { Route as RetroRetroIdRouteImport } from './routes/retro/$retroId'
-import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 
+const RetrosRoute = RetrosRouteImport.update({
+  id: '/retros',
+  path: '/retros',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -24,53 +31,92 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RetroIndexRoute = RetroIndexRouteImport.update({
+  id: '/retro/',
+  path: '/retro/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeamTeamIdRoute = TeamTeamIdRouteImport.update({
+  id: '/team/$teamId',
+  path: '/team/$teamId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RetroRetroIdRoute = RetroRetroIdRouteImport.update({
   id: '/retro/$retroId',
   path: '/retro/$retroId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
-  id: '/demo/tanstack-query',
-  path: '/demo/tanstack-query',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/retros': typeof RetrosRoute
   '/retro/$retroId': typeof RetroRetroIdRoute
+  '/team/$teamId': typeof TeamTeamIdRoute
+  '/retro/': typeof RetroIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/retros': typeof RetrosRoute
   '/retro/$retroId': typeof RetroRetroIdRoute
+  '/team/$teamId': typeof TeamTeamIdRoute
+  '/retro': typeof RetroIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/retros': typeof RetrosRoute
   '/retro/$retroId': typeof RetroRetroIdRoute
+  '/team/$teamId': typeof TeamTeamIdRoute
+  '/retro/': typeof RetroIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/demo/tanstack-query' | '/retro/$retroId'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/retros'
+    | '/retro/$retroId'
+    | '/team/$teamId'
+    | '/retro/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/demo/tanstack-query' | '/retro/$retroId'
-  id: '__root__' | '/' | '/login' | '/demo/tanstack-query' | '/retro/$retroId'
+  to:
+    | '/'
+    | '/login'
+    | '/retros'
+    | '/retro/$retroId'
+    | '/team/$teamId'
+    | '/retro'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/retros'
+    | '/retro/$retroId'
+    | '/team/$teamId'
+    | '/retro/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
-  DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  RetrosRoute: typeof RetrosRoute
   RetroRetroIdRoute: typeof RetroRetroIdRoute
+  TeamTeamIdRoute: typeof TeamTeamIdRoute
+  RetroIndexRoute: typeof RetroIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/retros': {
+      id: '/retros'
+      path: '/retros'
+      fullPath: '/retros'
+      preLoaderRoute: typeof RetrosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -85,18 +131,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/retro/': {
+      id: '/retro/'
+      path: '/retro'
+      fullPath: '/retro/'
+      preLoaderRoute: typeof RetroIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/team/$teamId': {
+      id: '/team/$teamId'
+      path: '/team/$teamId'
+      fullPath: '/team/$teamId'
+      preLoaderRoute: typeof TeamTeamIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/retro/$retroId': {
       id: '/retro/$retroId'
       path: '/retro/$retroId'
       fullPath: '/retro/$retroId'
       preLoaderRoute: typeof RetroRetroIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/tanstack-query': {
-      id: '/demo/tanstack-query'
-      path: '/demo/tanstack-query'
-      fullPath: '/demo/tanstack-query'
-      preLoaderRoute: typeof DemoTanstackQueryRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -105,8 +158,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
-  DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  RetrosRoute: RetrosRoute,
   RetroRetroIdRoute: RetroRetroIdRoute,
+  TeamTeamIdRoute: TeamTeamIdRoute,
+  RetroIndexRoute: RetroIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
