@@ -131,15 +131,23 @@ function TeamsPage() {
 											}
 										}}
 										onFocus={(event) => event.currentTarget.select()}
+										onBlur={(e) => {
+											e.preventDefault();
+											void handleSaveEdit();
+										}}
 										autoFocus
 										className="text-lg font-semibold"
+										onClick={(e) => e.stopPropagation()}
 									/>
 								) : (
 									<CardTitle>
 										<button
 											type="button"
 											className="text-left w-full hover:text-primary transition-colors"
-											onClick={() => handleStartEdit(team.id, team.name)}
+											onClick={(e) => {
+												e.stopPropagation();
+												handleStartEdit(team.id, team.name);
+											}}
 										>
 											{team.name}
 										</button>
