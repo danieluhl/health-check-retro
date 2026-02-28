@@ -18,17 +18,26 @@ export const Route = createFileRoute("/retro/$retroId")({
 			.eq("id", params.retroId)
 			.single();
 
+		const { data: survey, error: surveyError } = await supabase
+			.from("surveys")
+			.select("id")
+			.eq("retro_id", params.retroId)
+			.single();
+
 		if (error) {
 			throw error;
 		}
+		if (surveyError) {
+			throw surveyError;
+		}
 
-		return { retro };
+		return { retro, survey };
 	},
 	component: RetroRoute,
 });
 
 function RetroRoute() {
-	const { retro } = Route.useLoaderData();
+	const { retro, survey } = Route.useLoaderData();
 	const createdAt = retro?.created_at
 		? formatDate(new Date(retro.created_at))
 		: "Unknown";
@@ -48,7 +57,7 @@ function RetroRoute() {
 						</Button>
 					</CollapsibleTrigger>
 					<CollapsibleContent>
-						<Survey />
+						<Survey surveyId={survey.id} retroCreatedAt={retro?.created_at} />
 					</CollapsibleContent>
 				</Collapsible>
 				<Collapsible className="text-center">

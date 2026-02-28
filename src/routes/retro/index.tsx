@@ -30,7 +30,7 @@ function Home() {
 	const handleCreateRetro = async () => {
 		setIsCreating(true);
 		const { data: retro, error } = await supabase
-			.from("retro")
+			.from("retros")
 			.insert({})
 			.select()
 			.single();

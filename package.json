@@ -9,6 +9,8 @@
 		"preview": "vite preview",
 		"test": "vitest run",
 		"deploy": "pnpm run build && wrangler deploy",
+		"validate": "pnpm run lint && pnpm run typecheck && pnpm run build",
+		"typecheck": "tsc",
 		"cf-typegen": "wrangler types",
 		"update-types": "npx supabase gen types --lang=typescript --project-id wgyjfrnqtxkqkframuba > src/types/supabase.gen.ts"
 	},

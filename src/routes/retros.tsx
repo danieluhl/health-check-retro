@@ -16,7 +16,7 @@ const formatDate = (date: Date) => {
 
 export const Route = createFileRoute("/retros")({
 	loader: async () => {
-		const { data: retro } = await supabase.from("retro").select();
+		const { data: retro } = await supabase.from("retros").select();
 		return { retros: retro };
 	},
 	component: Home,
