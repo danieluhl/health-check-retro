@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronsUpDownIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Discussion } from "@/components/retro/Discussion";
 import { Survey } from "@/components/retro/Survey";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +40,47 @@ export const Route = createFileRoute("/retro/$retroId")({
 
 function RetroRoute() {
 	const { retro, survey } = Route.useLoaderData();
+	const storageKey = useMemo(() => `retro:${retro.id}:sections`, [retro.id]);
+	const [surveyOpen, setSurveyOpen] = useState(false);
+	const [discussionOpen, setDiscussionOpen] = useState(false);
+
+	const setLocalStorage = useCallback(
+		({
+			surveyOpen,
+			discussionOpen,
+		}: {
+			surveyOpen: boolean;
+			discussionOpen: boolean;
+		}) => {
+			localStorage.setItem(
+				storageKey,
+				JSON.stringify({ surveyOpen, discussionOpen }),
+			);
+		},
+		[storageKey],
+	);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: only run on load
+	useEffect(() => {
+		const raw = localStorage.getItem(storageKey);
+		if (!raw) {
+			return;
+		}
+		try {
+			const parsed = JSON.parse(raw);
+			if (typeof parsed?.surveyOpen === "boolean") {
+				setSurveyOpen(parsed.surveyOpen);
+				setLocalStorage({ surveyOpen: parsed.surveyOpen, discussionOpen });
+			}
+			if (typeof parsed?.discussionOpen === "boolean") {
+				setDiscussionOpen(parsed.discussionOpen);
+				setLocalStorage({ surveyOpen, discussionOpen: parsed.discussionOpen });
+			}
+		} catch {
+			// ignore invalid storage
+		}
+	}, []);
+
 	const createdAt = retro?.created_at
 		? formatDate(new Date(retro.created_at))
 		: "Unknown";
@@ -49,7 +92,14 @@ function RetroRoute() {
 				<p className="text-muted-foreground">{createdAt}</p>
 			</div>
 			<div className="flex w-full flex-col gap-8 items-center justify-between">
-				<Collapsible className="text-center">
+				<Collapsible
+					className="text-center"
+					open={surveyOpen}
+					onOpenChange={(v) => {
+						setLocalStorage({ surveyOpen: v, discussionOpen });
+						setSurveyOpen(v);
+					}}
+				>
 					<CollapsibleTrigger>
 						<Button size="lg">
 							<ChevronsUpDownIcon />
@@ -60,14 +110,23 @@ function RetroRoute() {
 						<Survey surveyId={survey.id} retroCreatedAt={retro?.created_at} />
 					</CollapsibleContent>
 				</Collapsible>
-				<Collapsible className="text-center">
+				<Collapsible
+					className="text-center w-full"
+					open={discussionOpen}
+					onOpenChange={(v) => {
+						setLocalStorage({ surveyOpen, discussionOpen: v });
+						setDiscussionOpen(v);
+					}}
+				>
 					<CollapsibleTrigger>
 						<Button size="lg">
 							<ChevronsUpDownIcon />
 							Discussion
 						</Button>
 					</CollapsibleTrigger>
-					<CollapsibleContent>todo</CollapsibleContent>
+					<CollapsibleContent className="w-full">
+						<Discussion retroId={retro.id} />
+					</CollapsibleContent>
 				</Collapsible>
 			</div>
 		</div>

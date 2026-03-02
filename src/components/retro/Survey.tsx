@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase";
 
@@ -132,6 +133,59 @@ export function Survey({ surveyId, retroCreatedAt }: SurveyProps) {
 		};
 	}, [ensureUserExists, loadExistingEntry, userId]);
 
+	// --- Realtime: live response count + cross-tab sync ---
+
+	const [responseCount, setResponseCount] = useState(0);
+
+	useEffect(() => {
+		let isMounted = true;
+		const loadResponseCount = async () => {
+			const { count, error } = await supabase
+				.from("entries")
+				.select("id", { count: "exact", head: true })
+				.eq("survey_id", surveyId);
+			if (!isMounted || error) return;
+			setResponseCount(count ?? 0);
+		};
+		void loadResponseCount();
+		return () => {
+			isMounted = false;
+		};
+	}, [surveyId]);
+
+	const handleEntryChange = useCallback(
+		(payload: { eventType: string; new: Record<string, unknown> }) => {
+			if (payload.eventType === "INSERT") {
+				setResponseCount((prev) => prev + 1);
+			}
+
+			// Cross-tab sync: update own answers when changed in another tab
+			const row = payload.new as {
+				survey_id: string;
+				user_id: string;
+				answers: Record<string, string> | null;
+			};
+			if (
+				row.user_id === userId &&
+				row.survey_id === surveyId &&
+				row.answers &&
+				typeof row.answers === "object" &&
+				!Array.isArray(row.answers)
+			) {
+				setAnswers(row.answers);
+			}
+		},
+		[userId, surveyId],
+	);
+
+	useRealtimeSubscription({
+		channelName: `entries:survey:${surveyId}`,
+		table: "entries",
+		event: "*",
+		filter: `survey_id=eq.${surveyId}`,
+		onPayload: handleEntryChange,
+	});
+
 	const persistAnswers = useCallback(
 		async (nextAnswers: Record<string, string>) => {
 			if (!userId) return;
@@ -166,6 +220,10 @@ export function Survey({ surveyId, retroCreatedAt }: SurveyProps) {
 
 	return (
 		<div className="space-y-6 max-w-2xl mx-auto p-4">
+			<p className="text-sm text-muted-foreground text-center">
+				{responseCount} {responseCount === 1 ? "person has" : "people have"}{" "}
+				responded
+			</p>
 			{questions.map((q) => (
 				<Card key={q.id}>
 					<CardHeader className="pb-2">
