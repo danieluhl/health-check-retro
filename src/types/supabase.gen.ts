@@ -94,16 +94,19 @@ export type Database = {
           created_at: string
           id: string
           team_id: string | null
+          timer: string
         }
         Insert: {
           created_at?: string
           id?: string
           team_id?: string | null
+          timer?: string
         }
         Update: {
           created_at?: string
           id?: string
           team_id?: string | null
+          timer?: string
         }
         Relationships: [
           {

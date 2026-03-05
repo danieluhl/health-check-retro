@@ -156,6 +156,13 @@ code {
 	}
 	body {
 		@apply bg-background text-foreground;
+		transition: background-color 240ms ease-in-out;
+	}
+	body.timer-warning-yellow {
+		background-color: oklch(0.34 0.09 88);
+	}
+	body.timer-warning-red {
+		background-color: oklch(0.3 0.14 28);
 	}
 	button {
 		@apply cursor-pointer;

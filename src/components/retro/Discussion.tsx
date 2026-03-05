@@ -1,4 +1,10 @@
-import { ArrowBigUpIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import {
+	ArrowBigUpIcon,
+	ArrowDown10Icon,
+	PencilIcon,
+	PlusIcon,
+	Trash2Icon,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -11,7 +17,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase";
@@ -20,6 +25,16 @@ type Topic = {
 	id: string;
 	text: string;
 	status: string | null;
+};
+
+type TopicStatus = "open" | "active" | "closed";
+
+const normalizeTopicStatus = (status: string | null): TopicStatus => {
+	if (status === "open" || status === "active" || status === "closed") {
+		return status;
+	}
+
+	return "open";
 };
 
 type DiscussionProps = {
@@ -39,6 +54,10 @@ export function Discussion({ retroId }: DiscussionProps) {
 	const [draftText, setDraftText] = useState("");
 	const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
 	const [isDeletingTopicId, setIsDeletingTopicId] = useState<string | null>(
+		null,
+	);
+	const [draggingTopicId, setDraggingTopicId] = useState<string | null>(null);
+	const [dropTargetStatus, setDropTargetStatus] = useState<TopicStatus | null>(
 		null,
 	);
 
@@ -278,6 +297,73 @@ export function Discussion({ retroId }: DiscussionProps) {
 		);
 	}, [voteCounts]);
 
+	const handleUpdateTopicStatus = useCallback(
+		async (topicId: string, nextStatus: TopicStatus) => {
+			const currentTopic = topics.find((topic) => topic.id === topicId);
+			if (!currentTopic) return;
+
+			const currentStatus = normalizeTopicStatus(currentTopic.status);
+			if (currentStatus === nextStatus) return;
+
+			if (
+				nextStatus === "active" &&
+				topics.some(
+					(topic) =>
+						topic.id !== topicId &&
+						normalizeTopicStatus(topic.status) === "active",
+				)
+			) {
+				return;
+			}
+
+			setTopics((prev) =>
+				prev.map((topic) =>
+					topic.id === topicId ? { ...topic, status: nextStatus } : topic,
+				),
+			);
+
+			const { error } = await supabase
+				.from("topics")
+				.update({ status: nextStatus })
+				.eq("id", topicId)
+				.eq("retro_id", retroId);
+
+			if (error) {
+				setTopics((prev) =>
+					prev.map((topic) =>
+						topic.id === topicId ? { ...topic, status: currentStatus } : topic,
+					),
+				);
+			}
+		},
+		[retroId, topics],
+	);
+
+	const isDropAllowed = useCallback(
+		(targetStatus: TopicStatus, topicId: string) => {
+			if (targetStatus !== "active") {
+				return true;
+			}
+
+			return !topics.some(
+				(topic) =>
+					topic.id !== topicId &&
+					normalizeTopicStatus(topic.status) === "active",
+			);
+		},
+		[topics],
+	);
+
+	const jamsTopics = topics.filter(
+		(topic) => normalizeTopicStatus(topic.status) === "open",
+	);
+	const jamminTopics = topics.filter(
+		(topic) => normalizeTopicStatus(topic.status) === "active",
+	);
+	const sauceTopics = topics.filter(
+		(topic) => normalizeTopicStatus(topic.status) === "closed",
+	);
+
 	const handleVote = useCallback(
 		async (topicId: string) => {
 			if (!userId) return;
@@ -402,16 +488,173 @@ export function Discussion({ retroId }: DiscussionProps) {
 		setTopicToDelete(null);
 	}, [editingTopicId, isDeletingTopicId, retroId, topicToDelete, userId]);
 
+	const handleEditButtonClick = useCallback(
+		(topic: Topic) => {
+			if (editingTopicId === topic.id) {
+				void saveTopicTitle(topic.id, draftText);
+				return;
+			}
+
+			handleStartEdit(topic);
+		},
+		[draftText, editingTopicId, handleStartEdit, saveTopicTitle],
+	);
+
+	const renderTopicCard = (topic: Topic) => (
+		<Card
+			key={topic.id}
+			draggable={editingTopicId !== topic.id}
+			onDragStart={(event) => {
+				event.dataTransfer.setData("text/topic-id", topic.id);
+				event.dataTransfer.effectAllowed = "move";
+				setDraggingTopicId(topic.id);
+			}}
+			onDragEnd={() => {
+				setDraggingTopicId(null);
+				setDropTargetStatus(null);
+			}}
+			className={cn("text-left", {
+				"opacity-70": draggingTopicId === topic.id,
+			})}
+		>
+			<CardHeader
+				className={cn("gap-3 py-3", {
+					"flex items-center justify-between": editingTopicId !== topic.id,
+					"flex flex-col items-stretch": editingTopicId === topic.id,
+				})}
+			>
+				<div
+					className={cn({
+						"flex-1": editingTopicId !== topic.id,
+						"w-full": editingTopicId === topic.id,
+					})}
+				>
+					{editingTopicId === topic.id ? (
+						<textarea
+							value={draftText}
+							onChange={(event) => setDraftText(event.target.value)}
+							onBlur={() => {
+								void saveTopicTitle(topic.id, draftText);
+							}}
+							onKeyDown={(event) => {
+								if (event.key === "Escape") {
+									event.preventDefault();
+									void saveTopicTitle(topic.id, draftText);
+								}
+								if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+									event.preventDefault();
+									void saveTopicTitle(topic.id, draftText);
+								}
+							}}
+							className="min-h-32 w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-base font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+						/>
+					) : (
+						<CardTitle className="text-base font-semibold">
+							{topic.text}
+						</CardTitle>
+					)}
+				</div>
+				<div className="w-full flex items-center gap-2 justify-between">
+					<div className="flex items-center gap-2">
+						<Button
+							size="sm"
+							variant="outline"
+							onClick={() => handleEditButtonClick(topic)}
+							disabled={!userId || isDeletingTopicId !== null}
+						>
+							<PencilIcon />
+							<span className="sr-only">Edit jam</span>
+						</Button>
+						<Button
+							size="sm"
+							variant="outline"
+							onClick={() => setTopicToDelete(topic)}
+							disabled={!userId || isDeletingTopicId !== null}
+							className="text-zinc-600 hover:text-destructive-foreground hover:bg-destructive"
+						>
+							<Trash2Icon />
+							<span className="sr-only">Delete jam</span>
+						</Button>
+					</div>
+					<Button
+						variant="outline"
+						onClick={() => handleVote(topic.id)}
+						disabled={!userId || isLoadingVotes}
+						className={cn({
+							"bg-accent": !!userVotes[topic.id],
+						})}
+					>
+						<ArrowBigUpIcon />
+						{voteCounts[topic.id] ?? 0}
+					</Button>
+				</div>
+			</CardHeader>
+		</Card>
+	);
+
 	return (
 		<div className="w-full flex flex-col gap-6 p-6">
-			<Card className="w-full">
+			<Card
+				className={cn("w-full", {
+					"ring-2 ring-primary/40": dropTargetStatus === "active",
+				})}
+				onDragOver={(event) => {
+					const topicId = draggingTopicId;
+					if (!topicId || !isDropAllowed("active", topicId)) return;
+					event.preventDefault();
+					setDropTargetStatus("active");
+				}}
+				onDragLeave={() => {
+					if (dropTargetStatus === "active") {
+						setDropTargetStatus(null);
+					}
+				}}
+				onDrop={(event) => {
+					event.preventDefault();
+					const topicId = event.dataTransfer.getData("text/topic-id");
+					setDropTargetStatus(null);
+					setDraggingTopicId(null);
+					if (!topicId || !isDropAllowed("active", topicId)) return;
+					void handleUpdateTopicStatus(topicId, "active");
+				}}
+			>
 				<CardHeader>
 					<CardTitle>Jammin</CardTitle>
 				</CardHeader>
-				<CardContent />
+				<CardContent>
+					{jamminTopics.length === 0 ? (
+						<p className="text-sm text-muted-foreground">No active jam yet.</p>
+					) : (
+						<div className="flex flex-col gap-3">
+							{jamminTopics.map(renderTopicCard)}
+						</div>
+					)}
+				</CardContent>
 			</Card>
 			<div className="flex h-full gap-6">
-				<Card className="flex-1">
+				<Card
+					className={cn("flex-1", {
+						"ring-2 ring-primary/40": dropTargetStatus === "open",
+					})}
+					onDragOver={(event) => {
+						if (!draggingTopicId) return;
+						event.preventDefault();
+						setDropTargetStatus("open");
+					}}
+					onDragLeave={() => {
+						if (dropTargetStatus === "open") {
+							setDropTargetStatus(null);
+						}
+					}}
+					onDrop={(event) => {
+						event.preventDefault();
+						const topicId = event.dataTransfer.getData("text/topic-id");
+						setDropTargetStatus(null);
+						setDraggingTopicId(null);
+						if (!topicId) return;
+						void handleUpdateTopicStatus(topicId, "open");
+					}}
+				>
 					<CardHeader className="flex flex-row items-center justify-between">
 						<CardTitle>Jams</CardTitle>
 						<div className="flex items-center gap-2">
@@ -421,7 +664,7 @@ export function Discussion({ retroId }: DiscussionProps) {
 								onClick={handleSortTopicsByVotes}
 								disabled={topics.length === 0 || isLoadingVotes}
 							>
-								Sort by votes
+								<ArrowDown10Icon />
 							</Button>
 							<Button
 								size="sm"
@@ -436,84 +679,52 @@ export function Discussion({ retroId }: DiscussionProps) {
 					<CardContent>
 						{isLoading ? (
 							<p className="text-sm text-muted-foreground">Loading jams...</p>
-						) : topics.length === 0 ? (
+						) : jamsTopics.length === 0 ? (
 							<p className="text-sm text-muted-foreground">No jams yet.</p>
 						) : (
 							<div className="flex flex-col gap-3">
-								{topics.map((topic) => (
-									<Card key={topic.id}>
-										<CardHeader className="flex items-center justify-between gap-3 py-3">
-											<div className="flex-1">
-												{editingTopicId === topic.id ? (
-													<Input
-														autoFocus
-														value={draftText}
-														onChange={(event) =>
-															setDraftText(event.target.value)
-														}
-														onBlur={() => {
-															void saveTopicTitle(topic.id, draftText);
-														}}
-														onKeyDown={(event) => {
-															if (event.key === "Escape") {
-																event.preventDefault();
-																void saveTopicTitle(topic.id, draftText);
-															}
-															if (event.key === "Enter") {
-																event.preventDefault();
-																void saveTopicTitle(topic.id, draftText);
-															}
-														}}
-														className="h-8 text-base font-semibold"
-													/>
-												) : (
-													<CardTitle className="text-base font-semibold">
-														<button
-															type="button"
-															className="w-full text-left"
-															onClick={() => handleStartEdit(topic)}
-															disabled={!userId}
-														>
-															{topic.text}
-														</button>
-													</CardTitle>
-												)}
-											</div>
-											<div className="w-full flex items-center gap-2 justify-between">
-												<Button
-													size="sm"
-													variant="outline"
-													onClick={() => setTopicToDelete(topic)}
-													disabled={!userId || isDeletingTopicId !== null}
-													className="text-zinc-600 hover:text-destructive-foreground hover:bg-destructive"
-												>
-													<Trash2Icon />
-													<span className="sr-only">Delete jam</span>
-												</Button>
-												<Button
-													variant="outline"
-													onClick={() => handleVote(topic.id)}
-													disabled={!userId || isLoadingVotes}
-													className={cn({
-														"bg-accent": !!userVotes[topic.id],
-													})}
-												>
-													<ArrowBigUpIcon />
-													{voteCounts[topic.id] ?? 0}
-												</Button>
-											</div>
-										</CardHeader>
-									</Card>
-								))}
+								{jamsTopics.map(renderTopicCard)}
 							</div>
 						)}
 					</CardContent>
 				</Card>
-				<Card className="flex-1">
+				<Card
+					className={cn("flex-1", {
+						"ring-2 ring-primary/40": dropTargetStatus === "closed",
+					})}
+					onDragOver={(event) => {
+						if (!draggingTopicId) return;
+						event.preventDefault();
+						setDropTargetStatus("closed");
+					}}
+					onDragLeave={() => {
+						if (dropTargetStatus === "closed") {
+							setDropTargetStatus(null);
+						}
+					}}
+					onDrop={(event) => {
+						event.preventDefault();
+						const topicId = event.dataTransfer.getData("text/topic-id");
+						setDropTargetStatus(null);
+						setDraggingTopicId(null);
+						if (!topicId) return;
+						void handleUpdateTopicStatus(topicId, "closed");
+					}}
+				>
 					<CardHeader>
 						<CardTitle>Sauce</CardTitle>
 					</CardHeader>
-					<CardContent />
+					<CardContent>
+						{isLoading ? (
+							<p className="text-sm text-muted-foreground">Loading sauce...</p>
+						) : sauceTopics.length === 0 ? (
+							<p className="text-sm text-muted-foreground">No sauce yet.</p>
+						) : (
+							<div className="flex flex-col gap-3">
+								{sauceTopics.map(renderTopicCard)}
+							</div>
+						)}
+					</CardContent>
 				</Card>
 			</div>
 			<Dialog

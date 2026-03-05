@@ -3,7 +3,6 @@ import { ChevronsUpDownIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Discussion } from "@/components/retro/Discussion";
 import { Survey } from "@/components/retro/Survey";
-import { Button } from "@/components/ui/button";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -88,23 +87,20 @@ function RetroRoute() {
 	return (
 		<div className="container mx-auto py-8 flex flex-col gap-8">
 			<div className="text-center">
-				<h1 className="text-3xl font-bold mb-2">Let the Jam Begin</h1>
-				<p className="text-muted-foreground">{createdAt}</p>
+				<h1 className="text-3xl font-bold mb-2">{createdAt}</h1>
 			</div>
 			<div className="flex w-full flex-col gap-8 items-center justify-between">
 				<Collapsible
-					className="text-center"
+					className="text-center w-full"
 					open={surveyOpen}
 					onOpenChange={(v) => {
 						setLocalStorage({ surveyOpen: v, discussionOpen });
 						setSurveyOpen(v);
 					}}
 				>
-					<CollapsibleTrigger>
-						<Button size="lg">
-							<ChevronsUpDownIcon />
-							Vibe Check
-						</Button>
+					<CollapsibleTrigger className="rounded justify-center w-full flex bg-secondary gap-4 py-2">
+						<ChevronsUpDownIcon />
+						Vibe Check
 					</CollapsibleTrigger>
 					<CollapsibleContent>
 						<Survey surveyId={survey.id} retroCreatedAt={retro?.created_at} />
@@ -118,11 +114,9 @@ function RetroRoute() {
 						setDiscussionOpen(v);
 					}}
 				>
-					<CollapsibleTrigger>
-						<Button size="lg">
-							<ChevronsUpDownIcon />
-							Discussion
-						</Button>
+					<CollapsibleTrigger className="rounded justify-center w-full flex bg-secondary gap-4 py-2">
+						<ChevronsUpDownIcon />
+						Discussion
 					</CollapsibleTrigger>
 					<CollapsibleContent className="w-full">
 						<Discussion retroId={retro.id} />

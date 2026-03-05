@@ -2,7 +2,7 @@ import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useEffect } from "react";
 import { supabase } from "@/utils/supabase";
 
-type TableName = "surveys" | "topics" | "votes" | "entries";
+type TableName = "surveys" | "topics" | "votes" | "entries" | "retros";
 type Event = "INSERT" | "UPDATE" | "DELETE" | "*";
 
 type SubscriptionConfig = {
@@ -48,6 +48,7 @@ export function useRealtimeSubscription({
 
 		const channel = supabase
 			.channel(channelName)
+			// .channel(channelName, { config: { private: true } })
 			.on("postgres_changes", channelConfig, onPayload)
 			.subscribe();
 
