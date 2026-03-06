@@ -1,5 +1,5 @@
 import { PauseIcon, PlayIcon, PlusIcon, RefreshCwIcon } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { supabase } from "@/utils/supabase";
 import { Button } from "../ui/button";
@@ -8,7 +8,7 @@ type RetroTimerProps = {
 	retroId: string;
 };
 
-const FIVE_MINUTES_MS = 3 * 60 * 1000;
+const FIVE_MINUTES_MS = 5 * 60 * 1000;
 const TWO_MINUTES_MS = 2 * 60 * 1000;
 const ONE_MINUTE_MS = 60 * 1000;
 
@@ -25,6 +25,7 @@ const formatRemainingTime = (remainingMs: number) => {
 };
 
 export function RetroTimer({ retroId }: RetroTimerProps) {
+	const timerRef = useRef<HTMLDivElement | null>(null);
 	const [timerEnd, setTimerEnd] = useState<string | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
 	const [nowMs, setNowMs] = useState(() => Date.now());
@@ -32,6 +33,7 @@ export function RetroTimer({ retroId }: RetroTimerProps) {
 	const [pausedRemainingMs, setPausedRemainingMs] = useState<number | null>(
 		null,
 	);
+	const [showFloatingTimer, setShowFloatingTimer] = useState(false);
 
 	const loadTimer = useCallback(async () => {
 		const { data, error } = await supabase
@@ -167,6 +169,23 @@ export function RetroTimer({ retroId }: RetroTimerProps) {
 	}, [computeRemainingMs, isPaused, pausedRemainingMs, timerEnd, updateTimer]);
 
 	useEffect(() => {
+		const target = timerRef.current;
+		if (!target || typeof IntersectionObserver === "undefined") {
+			return;
+		}
+
+		const observer = new IntersectionObserver(([entry]) => {
+			setShowFloatingTimer(!entry.isIntersecting);
+		});
+
+		observer.observe(target);
+
+		return () => {
+			observer.disconnect();
+		};
+	}, []);
+
+	useEffect(() => {
 		document.body.classList.remove("timer-warning-yellow", "timer-warning-red");
 		let activeClass: "timer-warning-yellow" | "timer-warning-red" | null = null;
 
@@ -191,47 +210,56 @@ export function RetroTimer({ retroId }: RetroTimerProps) {
 	}, [remainingMs]);
 
 	return (
-		<div className="flex items-center gap-2">
-			<div className="font-mono tabular-nums min-w-14 text-right text-4xl">
-				{remainingLabel}
+		<>
+			<div ref={timerRef} className="flex items-center gap-2">
+				<div className="font-mono tabular-nums min-w-14 text-right text-4xl">
+					{remainingLabel}
+				</div>
+				<Button
+					type="button"
+					variant="secondary"
+					size="sm"
+					onClick={() => {
+						void handleTogglePause();
+					}}
+					disabled={isSaving || remainingMs <= 0}
+				>
+					{isPaused ? (
+						<PlayIcon className="size-4" />
+					) : (
+						<PauseIcon className="size-4" />
+					)}
+				</Button>
+				<Button
+					type="button"
+					variant="secondary"
+					size="sm"
+					onClick={() => {
+						void handleRefreshTimer();
+					}}
+					disabled={isSaving}
+				>
+					<RefreshCwIcon className="size-4" />
+				</Button>
+				<Button
+					type="button"
+					variant="secondary"
+					size="sm"
+					onClick={() => {
+						void handleAddTwoMinutes();
+					}}
+					disabled={isSaving}
+				>
+					<PlusIcon />
+				</Button>
 			</div>
-			<Button
-				type="button"
-				variant="secondary"
-				size="sm"
-				onClick={() => {
-					void handleTogglePause();
-				}}
-				disabled={isSaving || remainingMs <= 0}
-			>
-				{isPaused ? (
-					<PlayIcon className="size-4" />
-				) : (
-					<PauseIcon className="size-4" />
-				)}
-			</Button>
-			<Button
-				type="button"
-				variant="secondary"
-				size="sm"
-				onClick={() => {
-					void handleRefreshTimer();
-				}}
-				disabled={isSaving}
-			>
-				<RefreshCwIcon className="size-4" />
-			</Button>
-			<Button
-				type="button"
-				variant="secondary"
-				size="sm"
-				onClick={() => {
-					void handleAddTwoMinutes();
-				}}
-				disabled={isSaving}
-			>
-				<PlusIcon />
-			</Button>
-		</div>
+			{showFloatingTimer ? (
+				<div className="fixed left-4 bottom-4 z-50 rounded-md border bg-background/95 px-3 py-2 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
+					<div className="font-mono tabular-nums text-base">
+						{remainingLabel}
+					</div>
+				</div>
+			) : null}
+		</>
 	);
 }

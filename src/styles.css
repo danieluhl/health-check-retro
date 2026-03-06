@@ -162,7 +162,7 @@ code {
 		background-color: oklch(0.34 0.09 88);
 	}
 	body.timer-warning-red {
-		background-color: oklch(0.3 0.14 28);
+		background-color: oklch(0.2 0.14 28);
 	}
 	button {
 		@apply cursor-pointer;
