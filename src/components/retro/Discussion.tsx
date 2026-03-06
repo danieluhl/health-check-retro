@@ -354,10 +354,10 @@ export function Discussion({ retroId }: DiscussionProps) {
 		[topics],
 	);
 
-	const jamsTopics = topics.filter(
+	const chunksTopics = topics.filter(
 		(topic) => normalizeTopicStatus(topic.status) === "open",
 	);
-	const jamminTopics = topics.filter(
+	const blenderTopics = topics.filter(
 		(topic) => normalizeTopicStatus(topic.status) === "active",
 	);
 	const sauceTopics = topics.filter(
@@ -563,7 +563,7 @@ export function Discussion({ retroId }: DiscussionProps) {
 							disabled={!userId || isDeletingTopicId !== null}
 						>
 							<PencilIcon />
-							<span className="sr-only">Edit jam</span>
+							<span className="sr-only">Edit Chunk</span>
 						</Button>
 						<Button
 							size="sm"
@@ -573,7 +573,7 @@ export function Discussion({ retroId }: DiscussionProps) {
 							className="text-zinc-600 hover:text-destructive-foreground hover:bg-destructive"
 						>
 							<Trash2Icon />
-							<span className="sr-only">Delete jam</span>
+							<span className="sr-only">Delete Chunk</span>
 						</Button>
 					</div>
 					<Button
@@ -619,14 +619,14 @@ export function Discussion({ retroId }: DiscussionProps) {
 				}}
 			>
 				<CardHeader>
-					<CardTitle>Jammin</CardTitle>
+					<CardTitle>Blender</CardTitle>
 				</CardHeader>
 				<CardContent>
-					{jamminTopics.length === 0 ? (
-						<p className="text-sm text-muted-foreground">No active jam yet.</p>
+					{blenderTopics.length === 0 ? (
+						<p className="text-sm text-muted-foreground">blender empty</p>
 					) : (
 						<div className="flex flex-col gap-3">
-							{jamminTopics.map(renderTopicCard)}
+							{blenderTopics.map(renderTopicCard)}
 						</div>
 					)}
 				</CardContent>
@@ -656,7 +656,7 @@ export function Discussion({ retroId }: DiscussionProps) {
 					}}
 				>
 					<CardHeader className="flex flex-row items-center justify-between">
-						<CardTitle>Jams</CardTitle>
+						<CardTitle>Chunks</CardTitle>
 						<div className="flex items-center gap-2">
 							<Button
 								size="sm"
@@ -678,12 +678,12 @@ export function Discussion({ retroId }: DiscussionProps) {
 					</CardHeader>
 					<CardContent>
 						{isLoading ? (
-							<p className="text-sm text-muted-foreground">Loading jams...</p>
-						) : jamsTopics.length === 0 ? (
-							<p className="text-sm text-muted-foreground">No jams yet.</p>
+							<p className="text-sm text-muted-foreground">Loading chunks...</p>
+						) : chunksTopics.length === 0 ? (
+							<p className="text-sm text-muted-foreground">No chunks yet.</p>
 						) : (
 							<div className="flex flex-col gap-3">
-								{jamsTopics.map(renderTopicCard)}
+								{chunksTopics.map(renderTopicCard)}
 							</div>
 						)}
 					</CardContent>
@@ -736,10 +736,10 @@ export function Discussion({ retroId }: DiscussionProps) {
 			>
 				<DialogContent showCloseButton={!isDeletingTopicId}>
 					<DialogHeader>
-						<DialogTitle>Delete jam?</DialogTitle>
+						<DialogTitle>Delete chunk?</DialogTitle>
 						<DialogDescription>
 							This will permanently delete
-							{topicToDelete ? `"${topicToDelete.text}".` : "this jam."}
+							{topicToDelete ? `"${topicToDelete.text}".` : "this chunk."}
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>

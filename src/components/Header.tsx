@@ -29,7 +29,7 @@ export default function Header() {
 					variant="ghost"
 					onClick={() => navigate({ to: "/" })}
 				>
-					JamSauce
+					Sauce Retro
 				</Button>
 			</div>
 			<div className="flex">
