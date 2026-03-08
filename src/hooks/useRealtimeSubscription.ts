@@ -2,7 +2,13 @@ import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useEffect } from "react";
 import { supabase } from "@/utils/supabase";
 
-type TableName = "surveys" | "topics" | "votes" | "entries" | "retros" | "experiments";
+type TableName =
+	| "surveys"
+	| "topics"
+	| "votes"
+	| "entries"
+	| "retros"
+	| "experiments";
 type Event = "INSERT" | "UPDATE" | "DELETE" | "*";
 
 type SubscriptionConfig = {
