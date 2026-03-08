@@ -51,7 +51,7 @@ function RetroRoute() {
 
 	return (
 		<div className="container py-6 mx-auto flex flex-col gap-6">
-			<div className="flex items-center">
+			<div className="flex items-center gap-4">
 				<h1>{createdAt}</h1>
 				<Dialog>
 					<DialogTrigger asChild>

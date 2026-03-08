@@ -112,12 +112,13 @@ export function SurveySection({
 				sad: 0,
 			}));
 
-			const questionIndexById = surveyQuestions.reduce<
-				Record<string, number>
-			>((acc, question, index) => {
-				acc[question.id] = index;
-				return acc;
-			}, {});
+			const questionIndexById = surveyQuestions.reduce<Record<string, number>>(
+				(acc, question, index) => {
+					acc[question.id] = index;
+					return acc;
+				},
+				{},
+			);
 
 			for (const entry of currentEntries ?? []) {
 				const answers = parseAnswers(entry.answers);
@@ -179,11 +180,10 @@ export function SurveySection({
 				return;
 			}
 
-			const { data: entriesForLastFive, error: entriesError } =
-				await supabase
-					.from("entries")
-					.select("survey_id, answers")
-					.in("survey_id", surveyIds);
+			const { data: entriesForLastFive, error: entriesError } = await supabase
+				.from("entries")
+				.select("survey_id, answers")
+				.in("survey_id", surveyIds);
 
 			const pastQuestionStats = surveyQuestions.map((question) => ({
 				question: question.label,
@@ -230,23 +230,17 @@ export function SurveySection({
 					<Sheet>
 						<SheetTrigger asChild>
 							<Button size="icon" variant="outline">
-								<ArrowBigRightIcon />
+								<ArrowBigRightIcon className="text-green-400" />
 							</Button>
 						</SheetTrigger>
-						<SheetContent
-							side="right"
-							className="overflow-y-auto sm:max-w-lg"
-						>
+						<SheetContent side="right" className="overflow-y-auto sm:max-w-lg">
 							<SheetHeader>
 								<SheetTitle>Vibe Check</SheetTitle>
 								<SheetDescription>
 									How are you feeling about the team?
 								</SheetDescription>
 							</SheetHeader>
-							<Survey
-								surveyId={surveyId}
-								retroCreatedAt={retroCreatedAt}
-							/>
+							<Survey surveyId={surveyId} retroCreatedAt={retroCreatedAt} />
 						</SheetContent>
 					</Sheet>
 				</CardHeader>
@@ -304,9 +298,7 @@ export function SurveySection({
 					{isLoadingCharts ? (
 						<p className="text-sm text-muted-foreground">Loading chart...</p>
 					) : pastRetrosQuestionData.length === 0 ? (
-						<p className="text-sm text-muted-foreground">
-							No retro data yet.
-						</p>
+						<p className="text-sm text-muted-foreground">No retro data yet.</p>
 					) : (
 						<ChartContainer config={questionStatsChartConfig}>
 							<BarChart data={pastRetrosQuestionData}>
