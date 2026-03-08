@@ -5,7 +5,7 @@ import {
 	PlusIcon,
 	Trash2Icon,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,9 +57,16 @@ export function Discussion({ retroId }: DiscussionProps) {
 		null,
 	);
 	const [draggingTopicId, setDraggingTopicId] = useState<string | null>(null);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [dropTargetStatus, setDropTargetStatus] = useState<TopicStatus | null>(
 		null,
 	);
+
+	useEffect(() => {
+		if (editingTopicId && textareaRef.current) {
+			textareaRef.current.focus();
+		}
+	}, [editingTopicId]);
 
 	const ensureUserExists = useCallback(async () => {
 		if (!userId) return;
@@ -354,13 +361,13 @@ export function Discussion({ retroId }: DiscussionProps) {
 		[topics],
 	);
 
-	const chunksTopics = topics.filter(
+	const openTopics = topics.filter(
 		(topic) => normalizeTopicStatus(topic.status) === "open",
 	);
-	const blenderTopics = topics.filter(
+	const activeTopics = topics.filter(
 		(topic) => normalizeTopicStatus(topic.status) === "active",
 	);
-	const sauceTopics = topics.filter(
+	const closedTopics = topics.filter(
 		(topic) => normalizeTopicStatus(topic.status) === "closed",
 	);
 
@@ -531,6 +538,7 @@ export function Discussion({ retroId }: DiscussionProps) {
 				>
 					{editingTopicId === topic.id ? (
 						<textarea
+							ref={textareaRef}
 							value={draftText}
 							onChange={(event) => setDraftText(event.target.value)}
 							onBlur={() => {
@@ -557,23 +565,23 @@ export function Discussion({ retroId }: DiscussionProps) {
 				<div className="w-full flex items-center gap-2 justify-between">
 					<div className="flex items-center gap-2">
 						<Button
-							size="sm"
+							size="icon"
 							variant="outline"
 							onClick={() => handleEditButtonClick(topic)}
 							disabled={!userId || isDeletingTopicId !== null}
 						>
 							<PencilIcon />
-							<span className="sr-only">Edit Chunk</span>
+							<span className="sr-only">Edit topic</span>
 						</Button>
 						<Button
-							size="sm"
+							size="icon"
 							variant="outline"
 							onClick={() => setTopicToDelete(topic)}
 							disabled={!userId || isDeletingTopicId !== null}
 							className="text-zinc-600 hover:text-destructive-foreground hover:bg-destructive"
 						>
 							<Trash2Icon />
-							<span className="sr-only">Delete Chunk</span>
+							<span className="sr-only">Delete topic</span>
 						</Button>
 					</div>
 					<Button
@@ -619,16 +627,12 @@ export function Discussion({ retroId }: DiscussionProps) {
 				}}
 			>
 				<CardHeader>
-					<CardTitle>Blender</CardTitle>
+					<CardTitle>Active Topic</CardTitle>
 				</CardHeader>
 				<CardContent>
-					{blenderTopics.length === 0 ? (
-						<p className="text-sm text-muted-foreground">blender empty</p>
-					) : (
-						<div className="flex flex-col gap-3">
-							{blenderTopics.map(renderTopicCard)}
-						</div>
-					)}
+					<div className="flex flex-col gap-3">
+						{activeTopics.map(renderTopicCard)}
+					</div>
 				</CardContent>
 			</Card>
 			<div className="flex h-full gap-6">
@@ -656,10 +660,10 @@ export function Discussion({ retroId }: DiscussionProps) {
 					}}
 				>
 					<CardHeader className="flex flex-row items-center justify-between">
-						<CardTitle>Chunks</CardTitle>
+						<CardTitle>Topics</CardTitle>
 						<div className="flex items-center gap-2">
 							<Button
-								size="sm"
+								size="icon"
 								variant="outline"
 								onClick={handleSortTopicsByVotes}
 								disabled={topics.length === 0 || isLoadingVotes}
@@ -667,7 +671,7 @@ export function Discussion({ retroId }: DiscussionProps) {
 								<ArrowDown10Icon />
 							</Button>
 							<Button
-								size="sm"
+								size="icon"
 								variant="outline"
 								onClick={handleAddTopic}
 								disabled={!userId || isCreating}
@@ -678,12 +682,12 @@ export function Discussion({ retroId }: DiscussionProps) {
 					</CardHeader>
 					<CardContent>
 						{isLoading ? (
-							<p className="text-sm text-muted-foreground">Loading chunks...</p>
-						) : chunksTopics.length === 0 ? (
-							<p className="text-sm text-muted-foreground">No chunks yet.</p>
+							<p className="text-sm text-muted-foreground">Loading topic...</p>
+						) : openTopics.length === 0 ? (
+							<p className="text-sm text-muted-foreground">No topics yet.</p>
 						) : (
 							<div className="flex flex-col gap-3">
-								{chunksTopics.map(renderTopicCard)}
+								{openTopics.map(renderTopicCard)}
 							</div>
 						)}
 					</CardContent>
@@ -717,11 +721,11 @@ export function Discussion({ retroId }: DiscussionProps) {
 					<CardContent>
 						{isLoading ? (
 							<p className="text-sm text-muted-foreground">Loading sauce...</p>
-						) : sauceTopics.length === 0 ? (
+						) : closedTopics.length === 0 ? (
 							<p className="text-sm text-muted-foreground">No sauce yet.</p>
 						) : (
 							<div className="flex flex-col gap-3">
-								{sauceTopics.map(renderTopicCard)}
+								{closedTopics.map(renderTopicCard)}
 							</div>
 						)}
 					</CardContent>
@@ -736,10 +740,10 @@ export function Discussion({ retroId }: DiscussionProps) {
 			>
 				<DialogContent showCloseButton={!isDeletingTopicId}>
 					<DialogHeader>
-						<DialogTitle>Delete chunk?</DialogTitle>
+						<DialogTitle>Delete topic?</DialogTitle>
 						<DialogDescription>
 							This will permanently delete
-							{topicToDelete ? `"${topicToDelete.text}".` : "this chunk."}
+							{topicToDelete ? `"${topicToDelete.text}".` : "this topic."}
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>

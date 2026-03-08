@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronsUpDownIcon } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowBigRightIcon, CircleHelpIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, XAxis, YAxis } from "recharts";
 import { Discussion } from "@/components/retro/Discussion";
+import { Experiments } from "@/components/retro/Experiments";
 import { Survey } from "@/components/retro/Survey";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	type ChartConfig,
@@ -12,10 +14,21 @@ import {
 	ChartTooltipContent,
 } from "@/components/ui/chart";
 import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from "@/components/ui/sheet";
 import { formatDate } from "@/lib/dateUtils";
 import { supabase } from "../../utils/supabase";
 
@@ -36,25 +49,12 @@ const questionStatsChartConfig: ChartConfig = {
 	sad: { label: "🙁", color: "oklch(0.62 0.2 28)" },
 };
 
-const lastFiveTotalsChartConfig: ChartConfig = {
-	happy: { label: "🙂", color: "oklch(0.7 0.17 145)" },
-	meh: { label: "😐", color: "oklch(0.74 0.15 90)" },
-	sad: { label: "🙁", color: "oklch(0.62 0.2 28)" },
-};
-
 type Sentiment = (typeof sentiments)[number];
 
 type QuestionChartDatum = {
 	question: string;
 	happy: number;
 	medium: number;
-	sad: number;
-};
-
-type LastFiveDatum = {
-	retroDate: string;
-	happy: number;
-	meh: number;
 	sad: number;
 };
 
@@ -80,12 +80,6 @@ const normalizeSentiment = (value: string): Sentiment | null => {
 	if (value === "medium") return "medium";
 	return null;
 };
-
-const formatRetroAxisDate = (dateString: string) =>
-	new Intl.DateTimeFormat(undefined, {
-		month: "short",
-		day: "numeric",
-	}).format(new Date(dateString));
 
 export const Route = createFileRoute("/retro/$retroId")({
 	loader: async ({ params }) => {
@@ -116,71 +110,13 @@ export const Route = createFileRoute("/retro/$retroId")({
 function RetroRoute() {
 	const { retro, survey } = Route.useLoaderData();
 	const storageKey = useMemo(() => `retro:${retro.id}:sections`, [retro.id]);
-	const [crunchOpen, setCrunchOpen] = useState(true);
-	const [surveyOpen, setSurveyOpen] = useState(false);
-	const [discussionOpen, setDiscussionOpen] = useState(false);
 	const [isLoadingCharts, setIsLoadingCharts] = useState(true);
 	const [questionStatsData, setQuestionStatsData] = useState<
 		QuestionChartDatum[]
 	>([]);
-	const [lastFiveTotalsData, setLastFiveTotalsData] = useState<LastFiveDatum[]>(
-		[],
-	);
-
-	const setLocalStorage = useCallback(
-		({
-			crunchOpen,
-			surveyOpen,
-			discussionOpen,
-		}: {
-			crunchOpen: boolean;
-			surveyOpen: boolean;
-			discussionOpen: boolean;
-		}) => {
-			localStorage.setItem(
-				storageKey,
-				JSON.stringify({ crunchOpen, surveyOpen, discussionOpen }),
-			);
-		},
-		[storageKey],
-	);
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: only run on load
-	useEffect(() => {
-		const raw = localStorage.getItem(storageKey);
-		if (!raw) {
-			return;
-		}
-		try {
-			const parsed = JSON.parse(raw);
-			if (typeof parsed?.crunchOpen === "boolean") {
-				setCrunchOpen(parsed.crunchOpen);
-				setLocalStorage({
-					crunchOpen: parsed.crunchOpen,
-					surveyOpen,
-					discussionOpen,
-				});
-			}
-			if (typeof parsed?.surveyOpen === "boolean") {
-				setSurveyOpen(parsed.surveyOpen);
-				setLocalStorage({
-					crunchOpen,
-					surveyOpen: parsed.surveyOpen,
-					discussionOpen,
-				});
-			}
-			if (typeof parsed?.discussionOpen === "boolean") {
-				setDiscussionOpen(parsed.discussionOpen);
-				setLocalStorage({
-					crunchOpen,
-					surveyOpen,
-					discussionOpen: parsed.discussionOpen,
-				});
-			}
-		} catch {
-			// ignore invalid storage
-		}
-	}, []);
+	const [pastRetrosQuestionData, setPastRetrosQuestionData] = useState<
+		QuestionChartDatum[]
+	>([]);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -241,7 +177,7 @@ function RetroRoute() {
 			const { data: lastRetros, error: retrosError } = await retrosQuery;
 			if (!isMounted || retrosError) {
 				setQuestionStatsData(initialQuestionStats);
-				setLastFiveTotalsData([]);
+				setPastRetrosQuestionData([]);
 				setIsLoadingCharts(false);
 				return;
 			}
@@ -249,7 +185,7 @@ function RetroRoute() {
 			const retroIds = (lastRetros ?? []).map((item) => item.id);
 			if (retroIds.length === 0) {
 				setQuestionStatsData(initialQuestionStats);
-				setLastFiveTotalsData([]);
+				setPastRetrosQuestionData([]);
 				setIsLoadingCharts(false);
 				return;
 			}
@@ -261,17 +197,7 @@ function RetroRoute() {
 
 			if (!isMounted || surveysError) {
 				setQuestionStatsData(initialQuestionStats);
-				setLastFiveTotalsData(
-					(lastRetros ?? [])
-						.slice()
-						.reverse()
-						.map((item) => ({
-							retroDate: formatRetroAxisDate(item.created_at),
-							happy: 0,
-							meh: 0,
-							sad: 0,
-						})),
-				);
+				setPastRetrosQuestionData([]);
 				setIsLoadingCharts(false);
 				return;
 			}
@@ -279,17 +205,7 @@ function RetroRoute() {
 			const surveyIds = (surveysForRetros ?? []).map((item) => item.id);
 			if (surveyIds.length === 0) {
 				setQuestionStatsData(initialQuestionStats);
-				setLastFiveTotalsData(
-					(lastRetros ?? [])
-						.slice()
-						.reverse()
-						.map((item) => ({
-							retroDate: formatRetroAxisDate(item.created_at),
-							happy: 0,
-							meh: 0,
-							sad: 0,
-						})),
-				);
+				setPastRetrosQuestionData([]);
 				setIsLoadingCharts(false);
 				return;
 			}
@@ -299,39 +215,24 @@ function RetroRoute() {
 				.select("survey_id, answers")
 				.in("survey_id", surveyIds);
 
-			const surveyIdToRetroId: Record<string, string> = {};
-			for (const surveyRow of surveysForRetros ?? []) {
-				surveyIdToRetroId[surveyRow.id] = surveyRow.retro_id;
-			}
-
-			const totalsByRetro: Record<
-				string,
-				{ happy: number; meh: number; sad: number }
-			> = {};
-			for (const retroRow of lastRetros ?? []) {
-				totalsByRetro[retroRow.id] = { happy: 0, meh: 0, sad: 0 };
-			}
+			// Aggregate past 5 retros by question (same layout as "This Retro")
+			const pastQuestionStats = surveyQuestions.map((question) => ({
+				question: question.label,
+				happy: 0,
+				medium: 0,
+				sad: 0,
+			}));
 
 			if (!entriesError) {
 				for (const entry of entriesForLastFive ?? []) {
-					const retroIdForEntry = surveyIdToRetroId[entry.survey_id];
-					if (!retroIdForEntry || !totalsByRetro[retroIdForEntry]) {
-						continue;
-					}
-
 					const answers = parseAnswers(entry.answers);
-					for (const rawSentiment of Object.values(answers)) {
+					for (const [questionId, rawSentiment] of Object.entries(answers)) {
+						const idx = questionIndexById[questionId];
 						const sentiment = normalizeSentiment(rawSentiment);
-						if (!sentiment) {
+						if (idx === undefined || !sentiment) {
 							continue;
 						}
-
-						if (sentiment === "medium") {
-							totalsByRetro[retroIdForEntry].meh += 1;
-							continue;
-						}
-
-						totalsByRetro[retroIdForEntry][sentiment] += 1;
+						pastQuestionStats[idx][sentiment] += 1;
 					}
 				}
 			}
@@ -341,17 +242,7 @@ function RetroRoute() {
 			}
 
 			setQuestionStatsData(initialQuestionStats);
-			setLastFiveTotalsData(
-				(lastRetros ?? [])
-					.slice()
-					.reverse()
-					.map((retroRow) => ({
-						retroDate: formatRetroAxisDate(retroRow.created_at),
-						happy: totalsByRetro[retroRow.id]?.happy ?? 0,
-						meh: totalsByRetro[retroRow.id]?.meh ?? 0,
-						sad: totalsByRetro[retroRow.id]?.sad ?? 0,
-					})),
-			);
+			setPastRetrosQuestionData(pastQuestionStats);
 			setIsLoadingCharts(false);
 		};
 
@@ -367,168 +258,187 @@ function RetroRoute() {
 		: "Unknown";
 
 	return (
-		<div className="container mx-auto py-8 flex flex-col gap-8">
-			<div className="text-center">
-				<h1 className="text-3xl font-bold mb-2">{createdAt}</h1>
+		<div className="container py-6 mx-auto flex flex-col">
+			<div className="flex items-center justify-between">
+				<Dialog>
+					<DialogTrigger asChild>
+						<Button size="icon" variant="ghost">
+							<CircleHelpIcon className="h-5 w-5" />
+							<span className="sr-only">How to Retro</span>
+						</Button>
+					</DialogTrigger>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>How to Retro</DialogTitle>
+							<DialogDescription>
+								A quick guide to running your retrospective.
+							</DialogDescription>
+						</DialogHeader>
+						<div className="space-y-4 text-sm">
+							<section>
+								<h3 className="font-semibold mb-1">1. Vibe Check</h3>
+								<p className="text-muted-foreground">
+									Start by having each team member fill out the survey. Rate how
+									you feel about Teamwork, Mission, Process, Producing,
+									Learning, and Fun.
+								</p>
+							</section>
+							<section>
+								<h3 className="font-semibold mb-1">2. Discussion</h3>
+								<p className="text-muted-foreground">
+									Add topics the team wants to talk about. Vote on what matters
+									most, then discuss the top items one at a time. Use the timer
+									to ensure as many topics can be discussed.
+								</p>
+							</section>
+							<section>
+								<h3 className="font-semibold mb-1">3. Experiments</h3>
+								<p className="text-muted-foreground">
+									Propose small, actionable experiments to try before the next
+									retro. Active experiments from the previous retro carry over
+									automatically so you can accept or reject them.
+								</p>
+							</section>
+						</div>
+					</DialogContent>
+				</Dialog>
+				<h1>{createdAt}</h1>
 			</div>
 			<div className="flex w-full flex-col gap-8 items-center justify-between">
-				<Collapsible
-					className="text-center w-full flex flex-col gap-8"
-					open={crunchOpen}
-					onOpenChange={(v) => {
-						setLocalStorage({ crunchOpen: v, surveyOpen, discussionOpen });
-						setCrunchOpen(v);
-					}}
-				>
-					<CollapsibleTrigger className="rounded justify-center w-full flex bg-secondary gap-4 py-2">
-						<ChevronsUpDownIcon />
-						Crunch
-					</CollapsibleTrigger>
-					<CollapsibleContent>
-						<div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
-							<Card>
-								<CardHeader>
-									<CardTitle>This Retro</CardTitle>
-								</CardHeader>
-								<CardContent>
-									{isLoadingCharts ? (
-										<p className="text-sm text-muted-foreground">
-											Loading chart...
-										</p>
-									) : (
-										<ChartContainer config={questionStatsChartConfig}>
-											<BarChart data={questionStatsData}>
-												<CartesianGrid vertical={false} strokeDasharray="3 3" />
-												<XAxis
-													dataKey="question"
-													tickLine={false}
-													axisLine={false}
-													tickMargin={8}
-												/>
-												<YAxis allowDecimals={false} />
-												<ChartTooltip
-													cursor={{
-														fill: "var(--color-muted)",
-														fillOpacity: 0.35,
-													}}
-													content={<ChartTooltipContent />}
-												/>
-												<Legend />
-												<Bar
-													dataKey="happy"
-													name="🙂"
-													fill="var(--color-happy)"
-													stackId="mood"
-													radius={[4, 4, 0, 0]}
-												/>
-												<Bar
-													dataKey="medium"
-													name="😐"
-													fill="var(--color-medium)"
-													stackId="mood"
-												/>
-												<Bar
-													dataKey="sad"
-													name="🙁"
-													fill="var(--color-sad)"
-													stackId="mood"
-												/>
-											</BarChart>
-										</ChartContainer>
-									)}
-								</CardContent>
-							</Card>
-							<Card>
-								<CardHeader>
-									<CardTitle>Old Retros</CardTitle>
-								</CardHeader>
-								<CardContent>
-									{isLoadingCharts ? (
-										<p className="text-sm text-muted-foreground">
-											Loading chart...
-										</p>
-									) : lastFiveTotalsData.length === 0 ? (
-										<p className="text-sm text-muted-foreground">
-											No retro data yet.
-										</p>
-									) : (
-										<ChartContainer config={lastFiveTotalsChartConfig}>
-											<BarChart data={lastFiveTotalsData}>
-												<CartesianGrid vertical={false} strokeDasharray="3 3" />
-												<XAxis
-													dataKey="retroDate"
-													tickLine={false}
-													axisLine={false}
-													tickMargin={8}
-												/>
-												<YAxis allowDecimals={false} />
-												<ChartTooltip
-													cursor={{
-														fill: "var(--color-muted)",
-														fillOpacity: 0.35,
-													}}
-													content={<ChartTooltipContent />}
-												/>
-												<Legend />
-												<Bar
-													dataKey="happy"
-													name="🙂"
-													fill="var(--color-happy)"
-													stackId="retro-mood"
-													radius={[4, 4, 0, 0]}
-												/>
-												<Bar
-													dataKey="meh"
-													name="😐"
-													fill="var(--color-meh)"
-													stackId="retro-mood"
-												/>
-												<Bar
-													dataKey="sad"
-													name="🙁"
-													fill="var(--color-sad)"
-													stackId="retro-mood"
-												/>
-											</BarChart>
-										</ChartContainer>
-									)}
-								</CardContent>
-							</Card>
-						</div>
-					</CollapsibleContent>
-				</Collapsible>
-				<Collapsible
-					className="text-center w-full"
-					open={surveyOpen}
-					onOpenChange={(v) => {
-						setLocalStorage({ crunchOpen, surveyOpen: v, discussionOpen });
-						setSurveyOpen(v);
-					}}
-				>
-					<CollapsibleTrigger className="rounded justify-center w-full flex bg-secondary gap-4 py-2">
-						<ChevronsUpDownIcon />
-						Vibe Check
-					</CollapsibleTrigger>
-					<CollapsibleContent>
-						<Survey surveyId={survey.id} retroCreatedAt={retro?.created_at} />
-					</CollapsibleContent>
-				</Collapsible>
-				<Collapsible
-					className="text-center w-full"
-					open={discussionOpen}
-					onOpenChange={(v) => {
-						setLocalStorage({ crunchOpen, surveyOpen, discussionOpen: v });
-						setDiscussionOpen(v);
-					}}
-				>
-					<CollapsibleTrigger className="rounded justify-center w-full flex bg-secondary gap-4 py-2">
-						<ChevronsUpDownIcon />
-						Discussion
-					</CollapsibleTrigger>
-					<CollapsibleContent className="w-full">
-						<Discussion retroId={retro.id} />
-					</CollapsibleContent>
-				</Collapsible>
+				<Discussion retroId={retro.id} />
+				<Experiments retroId={retro.id} />
+				<div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
+					<Card>
+						<CardHeader className="flex flex-row justify-between items-center">
+							<CardTitle>This Retro</CardTitle>
+							<Sheet>
+								<SheetTrigger asChild>
+									<Button size="icon" variant="outline">
+										<ArrowBigRightIcon />
+									</Button>
+								</SheetTrigger>
+								<SheetContent
+									side="right"
+									className="overflow-y-auto sm:max-w-lg"
+								>
+									<SheetHeader>
+										<SheetTitle>Vibe Check</SheetTitle>
+										<SheetDescription>
+											How are you feeling about the team?
+										</SheetDescription>
+									</SheetHeader>
+									<Survey
+										surveyId={survey.id}
+										retroCreatedAt={retro?.created_at}
+									/>
+								</SheetContent>
+							</Sheet>
+						</CardHeader>
+						<CardContent>
+							{isLoadingCharts ? (
+								<p className="text-sm text-muted-foreground">
+									Loading chart...
+								</p>
+							) : (
+								<ChartContainer config={questionStatsChartConfig}>
+									<BarChart data={questionStatsData}>
+										<CartesianGrid vertical={false} strokeDasharray="3 3" />
+										<XAxis
+											dataKey="question"
+											tickLine={false}
+											axisLine={false}
+											tickMargin={8}
+										/>
+										<YAxis allowDecimals={false} />
+										<ChartTooltip
+											cursor={{
+												fill: "var(--color-muted)",
+												fillOpacity: 0.35,
+											}}
+											content={<ChartTooltipContent />}
+										/>
+										<Legend />
+										<Bar
+											dataKey="happy"
+											name="🙂"
+											fill="var(--color-happy)"
+											stackId="mood"
+											radius={[4, 4, 0, 0]}
+										/>
+										<Bar
+											dataKey="medium"
+											name="😐"
+											fill="var(--color-medium)"
+											stackId="mood"
+										/>
+										<Bar
+											dataKey="sad"
+											name="🙁"
+											fill="var(--color-sad)"
+											stackId="mood"
+										/>
+									</BarChart>
+								</ChartContainer>
+							)}
+						</CardContent>
+					</Card>
+					<Card>
+						<CardHeader>
+							<CardTitle>Trends</CardTitle>
+						</CardHeader>
+						<CardContent>
+							{isLoadingCharts ? (
+								<p className="text-sm text-muted-foreground">
+									Loading chart...
+								</p>
+							) : pastRetrosQuestionData.length === 0 ? (
+								<p className="text-sm text-muted-foreground">
+									No retro data yet.
+								</p>
+							) : (
+								<ChartContainer config={questionStatsChartConfig}>
+									<BarChart data={pastRetrosQuestionData}>
+										<CartesianGrid vertical={false} strokeDasharray="3 3" />
+										<XAxis
+											dataKey="question"
+											tickLine={false}
+											axisLine={false}
+											tickMargin={8}
+										/>
+										<YAxis allowDecimals={false} />
+										<ChartTooltip
+											cursor={{
+												fill: "var(--color-muted)",
+												fillOpacity: 0.35,
+											}}
+											content={<ChartTooltipContent />}
+										/>
+										<Legend />
+										<Bar
+											dataKey="happy"
+											name="🙂"
+											fill="var(--color-happy)"
+											stackId="mood"
+											radius={[4, 4, 0, 0]}
+										/>
+										<Bar
+											dataKey="medium"
+											name="😐"
+											fill="var(--color-medium)"
+											stackId="mood"
+										/>
+										<Bar
+											dataKey="sad"
+											name="🙁"
+											fill="var(--color-sad)"
+											stackId="mood"
+										/>
+									</BarChart>
+								</ChartContainer>
+							)}
+						</CardContent>
+					</Card>
+				</div>
 			</div>
 		</div>
 	);

@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      experiments: {
+        Row: {
+          created_at: string
+          id: string
+          retro_id: string
+          status: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          retro_id: string
+          status?: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          retro_id?: string
+          status?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experiments_retro_id_fkey"
+            columns: ["retro_id"]
+            isOneToOne: false
+            referencedRelation: "retros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entries: {
         Row: {
           answers: Json | null

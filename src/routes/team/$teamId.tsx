@@ -1,10 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-	CalendarIcon,
-	PlusIcon,
-	SquareArrowRightIcon,
-	Trash2Icon,
-} from "lucide-react";
+import { CalendarIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,10 +21,12 @@ export const Route = createFileRoute("/team/$teamId")({
 			.select("id, name")
 			.eq("id", params.teamId)
 			.single();
+
 		const { data: retros } = await supabase
 			.from("retros")
 			.select()
-			.eq("team_id", params.teamId);
+			.eq("team_id", params.teamId)
+			.order("created_at", { ascending: false });
 
 		if (error) {
 			throw error;
@@ -54,17 +51,41 @@ function Home() {
 
 	const handleCreateRetro = async () => {
 		setIsCreating(true);
+
+		// Find the most recent retro to clone active experiments from
+		const previousRetroId = retroList.length > 0 ? retroList[0].id : null;
+
 		const { data: retro, error } = await supabase
 			.from("retros")
 			.insert({ team_id: team.id })
 			.select()
 			.single();
-		setIsCreating(false);
 
 		if (error || !retro) {
+			setIsCreating(false);
 			return;
 		}
 
+		// Clone active experiments from the previous retro into the new one
+		if (previousRetroId) {
+			const { data: activeExperiments } = await supabase
+				.from("experiments")
+				.select("text")
+				.eq("retro_id", previousRetroId)
+				.eq("status", "active");
+
+			if (activeExperiments && activeExperiments.length > 0) {
+				await supabase.from("experiments").insert(
+					activeExperiments.map((exp) => ({
+						retro_id: retro.id,
+						text: exp.text,
+						status: "active" as const,
+					})),
+				);
+			}
+		}
+
+		setIsCreating(false);
 		navigate({ to: "/retro/$retroId", params: { retroId: retro.id } });
 	};
 
@@ -107,54 +128,40 @@ function Home() {
 				{retroList.map((retro) => (
 					<Card
 						key={retro.id}
-						className="h-full hover:border-primary/50 transition-colors"
+						className="group relative h-full cursor-pointer hover:border-primary/50 transition-colors"
+						onClick={() => {
+							navigate({
+								to: "/retro/$retroId",
+								params: { retroId: retro.id },
+							});
+						}}
 					>
-						<CardHeader
-							className="cursor-pointer"
-							onClick={() => {
-								navigate({
-									to: "/retro/$retroId",
-									params: { retroId: retro.id },
-								});
-							}}
-						>
-							<div className="flex items-start justify-between gap-2">
-								<CardTitle className="text-xl flex items-center gap-2">
-									<CalendarIcon className="w-5 h-5 text-muted-foreground" />
-									{retro.created_at
-										? formatDate(new Date(retro.created_at))
-										: "Unknown Date"}
-								</CardTitle>
-								<Button
-									onClick={() => {
-										navigate({
-											to: "/retro/$retroId",
-											params: { retroId: retro.id },
-										});
-									}}
-									className=""
-									variant="ghost"
-									size="icon"
-								>
-									<SquareArrowRightIcon />
-								</Button>
-							</div>
+						<CardHeader>
+							<CardTitle className="text-xl flex items-center gap-2">
+								<CalendarIcon className="w-5 h-5 text-muted-foreground" />
+								{retro.created_at
+									? formatDate(new Date(retro.created_at))
+									: "Unknown Date"}
+							</CardTitle>
 						</CardHeader>
-						<CardContent className="flex justify-between items-center">
+						<CardContent>
 							<p className="text-sm text-muted-foreground break-all">
 								Id: {retro.id.split("-")[0]}
 							</p>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon"
-								className="h-8 w-8 text-muted-foreground hover:text-destructive"
-								onClick={() => setRetroToDelete(retro)}
-							>
-								<Trash2Icon className="w-4 h-4" />
-								<span className="sr-only">Delete retro</span>
-							</Button>
 						</CardContent>
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							className="absolute bottom-2 right-2 h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+							onClick={(e) => {
+								e.stopPropagation();
+								setRetroToDelete(retro);
+							}}
+						>
+							<Trash2Icon className="w-4 h-4" />
+							<span className="sr-only">Delete retro</span>
+						</Button>
 					</Card>
 				))}
 

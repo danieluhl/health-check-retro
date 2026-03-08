@@ -44,20 +44,20 @@ const ratings = [
 	{
 		value: "sad",
 		icon: Frown,
-		color: "text-red-500",
-		hoverColor: "hover:bg-red-50",
+		color: "bg-red-900",
+		hoverColor: "hover:bg-red-900",
 	},
 	{
 		value: "neutral",
 		icon: Meh,
-		color: "text-yellow-500",
-		hoverColor: "hover:bg-yellow-50",
+		color: "bg-yellow-700",
+		hoverColor: "hover:bg-yellow-700",
 	},
 	{
 		value: "happy",
 		icon: Smile,
-		color: "text-green-500",
-		hoverColor: "hover:bg-green-50",
+		color: "bg-green-700",
+		hoverColor: "hover:bg-green-700",
 	},
 ];
 
@@ -241,18 +241,19 @@ export function Survey({ surveyId, retroCreatedAt }: SurveyProps) {
 										key={r.value}
 										htmlFor={optionId}
 										className={cn(
-											"flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-200",
-											isEditable
-												? "cursor-pointer"
-												: "cursor-not-allowed opacity-50",
-											isEditable ? r.hoverColor : null,
-											isSelected
-												? isEditable
-													? "bg-accent scale-110"
-													: "bg-accent"
-												: isEditable
-													? "opacity-60 grayscale hover:grayscale-0 hover:opacity-100"
-													: "opacity-50 grayscale",
+											"flex flex-col items-center gap-2 p-4 rounded-xl transition-all",
+											"duration-200 text-muted-foreground hover:text-primary-foreground",
+											{
+												"cursor-pointer": isEditable,
+												"cursor-not-allowed opacity-50": !isEditable,
+												[r.hoverColor]: isEditable || isSelected,
+												[`text-primary-foreground ${r.color}`]: isSelected,
+												"scale-110": isSelected && isEditable,
+												grayscale: !isSelected,
+												"opacity-60 hover:grayscale-0 hover:opacity-100":
+													!isSelected && isEditable,
+												"opacity-50": !isSelected && !isEditable,
+											},
 										)}
 									>
 										<input
@@ -265,12 +266,7 @@ export function Survey({ surveyId, retroCreatedAt }: SurveyProps) {
 											disabled={!isEditable}
 											className="sr-only"
 										/>
-										<Icon
-											className={cn(
-												"w-10 h-10",
-												isSelected ? r.color : "text-muted-foreground",
-											)}
-										/>
+										<Icon className={cn("w-10 h-10")} />
 									</Label>
 								);
 							})}
