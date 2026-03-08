@@ -1,8 +1,19 @@
 import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import { ChevronLeftIcon } from "lucide-react";
-import { supabase } from "../utils/supabase";
 import { RetroTimer } from "./retro/RetroTimer";
 import { Button } from "./ui/button";
+
+/*
+import { supabase } from "../utils/supabase";
+			<Button
+				type="button"
+				variant="secondary"
+				size="sm"
+				onClick={() => void supabase.auth.signOut()}
+			>
+				Sign out
+			</Button>
+*/
 
 export default function Header() {
 	const location = useLocation();
@@ -35,14 +46,6 @@ export default function Header() {
 			<div className="flex">
 				{retroId ? <RetroTimer retroId={retroId} /> : null}
 			</div>
-			<Button
-				type="button"
-				variant="secondary"
-				size="sm"
-				onClick={() => void supabase.auth.signOut()}
-			>
-				Sign out
-			</Button>
 		</header>
 	);
 }

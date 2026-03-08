@@ -601,7 +601,7 @@ export function Discussion({ retroId }: DiscussionProps) {
 	);
 
 	return (
-		<div className="w-full flex flex-col gap-6 p-6">
+		<div className="w-full flex flex-col gap-6">
 			<Card
 				className={cn("w-full", {
 					"ring-2 ring-primary/40": dropTargetStatus === "active",
